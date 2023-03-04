@@ -12,7 +12,7 @@ async function main() {
     },
   });
 
-  const [en, whatever] = await translate.translate(
+  const [en] = await translate.translate(
     "馬に乗っている宇宙飛行士、HD、ダイナミックな照明",
     {
       from: LANGUAGE_CODE_JAPANESE,
@@ -21,7 +21,6 @@ async function main() {
   );
 
   console.log(en);
-  console.dir(whatever);
 }
 
-main();
+void main();
