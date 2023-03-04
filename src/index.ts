@@ -4,8 +4,6 @@ const LANGUAGE_CODE_JAPANESE = "ja";
 const LANGUAGE_CODE_ENGLISH = "en";
 
 async function main() {
-  require("dotenv").config();
-
   const translate = new Translate({
     // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
     credentials: {
