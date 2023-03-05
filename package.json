@@ -3,24 +3,29 @@
   "name": "tabiji",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "out/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "lint": "eslint .",
-    "start": "npm run build && node --require dotenv/config out/index.js"
+    "start": "npm run build && node --require dotenv/config ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@google-cloud/translate": "^7.2.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "node-fetch": "^3.3.0",
+    "replicate-api": "^0.4.1"
   },
   "devDependencies": {
     "@types/node": "^18.14.6",
+    "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "eslint": "^8.35.0",
+    "prettier-plugin-organize-imports": "^3.2.2",
     "typescript": "^4.9.5"
-  }
+  },
+  "type": "module"
 }

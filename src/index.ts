@@ -1,7 +1,23 @@
-import { Translate } from "@google-cloud/translate/build/src/v2";
+import { Translate } from "@google-cloud/translate/build/src/v2/index.js";
+import { writeFile } from "fs/promises";
+import fetch from "node-fetch";
+import { basename } from "path";
+import { predict } from "replicate-api";
 
 const LANGUAGE_CODE_JAPANESE = "ja";
 const LANGUAGE_CODE_ENGLISH = "en";
+
+async function sd(token: string, prompt: string) {
+  const res = await predict({
+    token,
+    model: "stability-ai/stable-diffusion",
+    input: { prompt, num_outputs: 4 },
+    poll: true,
+  });
+  // FIXME:
+  const urls = res.output as string[];
+  return urls;
+}
 
 async function main() {
   const translate = new Translate({
@@ -20,7 +36,15 @@ async function main() {
     }
   );
 
-  console.log(en);
+  const urls = await sd(process.env.REPLICATE_TOKEN ?? "", en);
+
+  await Promise.all(
+    urls.map(async (url) => {
+      const res = await fetch(url);
+      const buf = await res.arrayBuffer();
+      await writeFile(basename(url), Buffer.from(buf));
+    })
+  );
 }
 
 void main();
