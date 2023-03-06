@@ -12,3 +12,30 @@ const output: unknown = [
 const parsed = schema.safeParse(output);
 
 console.dir(parsed);
+
+const Point = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+
+console.dir(Point.safeParse({ x: 0, y: 1 }));
+console.dir(Point.safeParse({ x: 2, y: 3, z: 4 }));
+console.dir(Point.safeParse({ x: 2, z: 4 }));
+
+const stringUint8 = z
+  .string()
+  .transform((e) => parseInt(e))
+  .pipe(
+    z
+      .number()
+      .int()
+      .gte(0)
+      .lt(2 ** 8)
+  );
+
+console.dir(stringUint8.safeParse("0"));
+console.dir(stringUint8.safeParse("123"));
+console.dir(stringUint8.safeParse(""));
+console.dir(stringUint8.safeParse("hi"));
+console.dir(stringUint8.safeParse("1234876"));
+console.dir(stringUint8.safeParse("-1"));
