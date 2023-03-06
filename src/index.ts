@@ -3,6 +3,7 @@ import { writeFile } from "fs/promises";
 import fetch from "node-fetch";
 import { basename } from "path";
 import { predict } from "replicate-api";
+import { z } from "zod";
 
 const LANGUAGE_CODE_JAPANESE = "ja";
 const LANGUAGE_CODE_ENGLISH = "en";
@@ -19,12 +20,36 @@ async function sd(token: string, prompt: string) {
   return urls;
 }
 
+const zNonEmptyString = () => z.string().min(1);
+
+const Secrets = z.object({
+  GOOGLE_CLOUD_CLIENT_EMAIL: zNonEmptyString().email(),
+  GOOGLE_CLOUD_PRIVATE_KEY: zNonEmptyString(),
+  REPLICATE_TOKEN: zNonEmptyString(),
+  LINE_CHANNEL_SECRET: zNonEmptyString(),
+  LINE_CHANNEL_ACCESS_TOKEN: zNonEmptyString(),
+});
+
+const stringToUint16 = z
+  .string()
+  .transform((e) => parseInt(e))
+  .pipe(
+    z
+      .number()
+      .int()
+      .gte(0)
+      .lt(2 ** 16)
+  );
+
 async function main() {
+  const secrets = Secrets.parse(process.env);
+  const port = stringToUint16.parse(process.env.PORT);
+
   const translate = new Translate({
     // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
     credentials: {
-      client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-      private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY,
+      client_email: secrets.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: secrets.GOOGLE_CLOUD_PRIVATE_KEY,
     },
   });
 
@@ -36,7 +61,7 @@ async function main() {
     }
   );
 
-  const urls = await sd(process.env.REPLICATE_TOKEN ?? "", en);
+  const urls = await sd(secrets.REPLICATE_TOKEN, en);
 
   await Promise.all(
     urls.map(async (url) => {
