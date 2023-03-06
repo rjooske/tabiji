@@ -10,7 +10,7 @@ import { z } from "zod";
 const LANGUAGE_CODE_JAPANESE = "ja";
 const LANGUAGE_CODE_ENGLISH = "en";
 
-const sdOutputSchema = z.array(z.string().url()).length(4);
+const sdOutputSchema = z.array(z.string().url());
 
 async function sd(token: string, prompt: string) {
   const res = await predict({
