@@ -14,7 +14,7 @@ const stderr = new Console(process.stderr);
 
 const zNonEmptyString = () => z.string().min(1);
 
-const Secrets = z.object({
+const secretsSchema = z.object({
   GOOGLE_CLOUD_CLIENT_EMAIL: zNonEmptyString().email(),
   GOOGLE_CLOUD_PRIVATE_KEY: zNonEmptyString(),
   REPLICATE_TOKEN: zNonEmptyString(),
@@ -58,7 +58,7 @@ const stringToUint16 = z
   );
 
 function main() {
-  const secrets = Secrets.parse(process.env);
+  const secrets = secretsSchema.parse(process.env);
   const port = stringToUint16.parse(process.env.PORT);
 
   const sslSecrets = sslFilePathsSchema.parse(process.env);
