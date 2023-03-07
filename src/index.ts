@@ -1,10 +1,16 @@
 import { Translate } from "@google-cloud/translate/build/src/v2/index.js";
 import line from "@line/bot-sdk";
 import express from "express";
+import { Console } from "node:console";
+import fs from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import { z } from "zod";
 import { Bot } from "./bot.js";
 import { ReplicateClient } from "./replicate.js";
 import { TranslateClient } from "./translate.js";
+
+const stderr = new Console(process.stderr);
 
 const zNonEmptyString = () => z.string().min(1);
 
@@ -15,6 +21,30 @@ const Secrets = z.object({
   LINE_CHANNEL_SECRET: zNonEmptyString(),
   LINE_CHANNEL_ACCESS_TOKEN: zNonEmptyString(),
 });
+
+const sslFilePathsSchema = z
+  .object({
+    SSL_CERTIFICATE_PATH: z.optional(z.string()),
+    SSL_KEY_PATH: z.optional(z.string()),
+  })
+  .transform((paths) => {
+    if (
+      paths.SSL_CERTIFICATE_PATH === undefined ||
+      paths.SSL_KEY_PATH === undefined
+    ) {
+      return;
+    }
+    try {
+      return {
+        certificate: fs.readFileSync(paths.SSL_CERTIFICATE_PATH, {
+          encoding: "utf8",
+        }),
+        key: fs.readFileSync(paths.SSL_KEY_PATH, { encoding: "utf8" }),
+      };
+    } catch (e) {
+      stderr.dir(e);
+    }
+  });
 
 const stringToUint16 = z
   .string()
@@ -30,6 +60,8 @@ const stringToUint16 = z
 function main() {
   const secrets = Secrets.parse(process.env);
   const port = stringToUint16.parse(process.env.PORT);
+
+  const sslSecrets = sslFilePathsSchema.parse(process.env);
 
   const lineClient = new line.Client({
     channelSecret: secrets.LINE_CHANNEL_SECRET,
@@ -67,7 +99,21 @@ function main() {
     }
   );
 
-  app.listen(port, () => console.log(`running on port ${port}`));
+  if (sslSecrets !== undefined) {
+    const httpsServer = https.createServer(
+      { key: sslSecrets.key, cert: sslSecrets.certificate },
+      app
+    );
+    httpsServer.listen({ port }, () =>
+      console.log(`listening on port ${port} in https`)
+    );
+  } else {
+    const httpServer = http.createServer(app);
+    httpServer.listen(port);
+    httpServer.listen({ port }, () =>
+      console.log(`listening on port ${port} in http`)
+    );
+  }
 }
 
 main();
