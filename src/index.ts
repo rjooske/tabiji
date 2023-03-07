@@ -1,5 +1,6 @@
 import { Translate } from "@google-cloud/translate/build/src/v2/index.js";
 import line from "@line/bot-sdk";
+import chokidar from "chokidar";
 import express from "express";
 import { Console } from "node:console";
 import fs from "node:fs";
@@ -22,29 +23,32 @@ const secretsSchema = z.object({
   LINE_CHANNEL_ACCESS_TOKEN: zNonEmptyString(),
 });
 
+type SslFilePaths = { certPath: string; keyPath: string };
+type SslFiles = { cert: string; key: string };
+
 const sslFilePathsSchema = z
   .object({
     SSL_CERTIFICATE_PATH: z.optional(z.string()),
     SSL_KEY_PATH: z.optional(z.string()),
   })
-  .transform((paths) => {
+  .transform((paths): SslFilePaths | undefined => {
     if (
-      paths.SSL_CERTIFICATE_PATH === undefined ||
-      paths.SSL_KEY_PATH === undefined
+      paths.SSL_CERTIFICATE_PATH !== undefined &&
+      paths.SSL_KEY_PATH !== undefined
     ) {
-      return;
-    }
-    try {
       return {
-        certificate: fs.readFileSync(paths.SSL_CERTIFICATE_PATH, {
-          encoding: "utf8",
-        }),
-        key: fs.readFileSync(paths.SSL_KEY_PATH, { encoding: "utf8" }),
+        certPath: paths.SSL_CERTIFICATE_PATH,
+        keyPath: paths.SSL_KEY_PATH,
       };
-    } catch (e) {
-      stderr.dir(e);
     }
   });
+
+function readSslFiles(paths: SslFilePaths): SslFiles {
+  return {
+    cert: fs.readFileSync(paths.certPath, { encoding: "utf8" }),
+    key: fs.readFileSync(paths.keyPath, { encoding: "utf8" }),
+  };
+}
 
 const stringToUint16 = z
   .string()
@@ -58,10 +62,10 @@ const stringToUint16 = z
   );
 
 function main() {
+  // Either we have all the secrets or fail immediately
   const secrets = secretsSchema.parse(process.env);
+  const sslFilePaths = sslFilePathsSchema.parse(process.env);
   const port = stringToUint16.parse(process.env.PORT);
-
-  const sslSecrets = sslFilePathsSchema.parse(process.env);
 
   const lineClient = new line.Client({
     channelSecret: secrets.LINE_CHANNEL_SECRET,
@@ -99,17 +103,20 @@ function main() {
     }
   );
 
-  if (sslSecrets !== undefined) {
-    const httpsServer = https.createServer(
-      { key: sslSecrets.key, cert: sslSecrets.certificate },
-      app
-    );
+  if (sslFilePaths !== undefined) {
+    const httpsServer = https.createServer(readSslFiles(sslFilePaths), app);
     httpsServer.listen({ port }, () =>
       console.log(`listening on port ${port} in https`)
     );
+    // Reload the certificate and the key after they get renewed automatically
+    chokidar.watch([sslFilePaths.certPath]).on("all", () => {
+      setTimeout(
+        () => httpsServer.setSecureContext(readSslFiles(sslFilePaths)),
+        10 * 1000
+      );
+    });
   } else {
     const httpServer = http.createServer(app);
-    httpServer.listen(port);
     httpServer.listen({ port }, () =>
       console.log(`listening on port ${port} in http`)
     );
