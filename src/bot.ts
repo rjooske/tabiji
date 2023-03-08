@@ -9,16 +9,27 @@ type StableDiffusionInJapaneseAction = {
   messageText: string;
 };
 
+type TextTooLongWarningAction = {
+  type: "text-too-long-warning";
+  replyToken: string;
+  maxLength: number;
+};
+
 type InProgressWarningAction = {
   type: "in-progress-warning";
   replyToken: string;
   actionInProgress: NonImmediateAction;
 };
 
-type Action = StableDiffusionInJapaneseAction | InProgressWarningAction;
+type Action =
+  | StableDiffusionInJapaneseAction
+  | TextTooLongWarningAction
+  | InProgressWarningAction;
 type NonImmediateAction = StableDiffusionInJapaneseAction;
 
 type ActionsInProgress = Map<string, NonImmediateAction>;
+
+const STABLE_DIFFUSION_PROMPT_MAX_LENGTH = 500;
 
 function decideAction(
   actions: ActionsInProgress,
@@ -39,14 +50,19 @@ function decideAction(
       replyToken: event.replyToken,
       actionInProgress: action,
     };
-  } else {
+  }
+  if (stringz.length(event.message.text) > STABLE_DIFFUSION_PROMPT_MAX_LENGTH) {
     return {
-      type: "stable-diffusion-in-japanese",
-      initiatorLineUserId: event.source.userId,
-      // FIXME: deny the request if the text is too long
-      messageText: event.message.text.trim(),
+      type: "text-too-long-warning",
+      replyToken: event.replyToken,
+      maxLength: STABLE_DIFFUSION_PROMPT_MAX_LENGTH,
     };
   }
+  return {
+    type: "stable-diffusion-in-japanese",
+    initiatorLineUserId: event.source.userId,
+    messageText: event.message.text,
+  };
 }
 
 function trimIfTooLong(s: string, maxLength: number) {
@@ -95,6 +111,15 @@ export class Bot {
     this.actionsInProgress.delete(action.initiatorLineUserId);
   }
 
+  private async handleTextTooLongWarningAction(
+    action: TextTooLongWarningAction
+  ) {
+    await this.lineClient.replyMessage(action.replyToken, {
+      type: "text",
+      text: `⚠️ 文章が長すぎます！最大${action.maxLength}文字までです`,
+    });
+  }
+
   private async handleInProgressWarningAction(action: InProgressWarningAction) {
     const prompt = trimIfTooLong(action.actionInProgress.messageText, 30);
     await this.lineClient.replyMessage(action.replyToken, {
@@ -113,6 +138,8 @@ export class Bot {
         return await this.handleStableDiffusionInJapaneseAction(action);
       case "in-progress-warning":
         return await this.handleInProgressWarningAction(action);
+      case "text-too-long-warning":
+        return await this.handleTextTooLongWarningAction(action);
     }
   }
 }
