@@ -8,7 +8,13 @@
   ],
   "ignorePatterns": ["/node_modules", "/out"],
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "project": ["./tsconfig.json"] },
+  "parserOptions": {
+    "project": ["./tsconfig.json"]
+  },
   "plugins": ["@typescript-eslint"],
-  "root": true
+  "root": true,
+  "rules": {
+    "@typescript-eslint/consistent-type-definitions": "off",
+    "@typescript-eslint/switch-exhaustiveness-check": "error"
+  }
 }
