@@ -109,7 +109,10 @@ function main() {
       console.log(`listening on port ${port} in https`)
     );
     // Reload the certificate and the key after they get renewed automatically
+    // https://stackoverflow.com/a/74076392
     chokidar.watch([sslFilePaths.certPath]).on("all", () => {
+      // Wait for a bit just to be sure that both the certificate and the key
+      // have been changed
       setTimeout(
         () => httpsServer.setSecureContext(readSslFiles(sslFilePaths)),
         10 * 1000
