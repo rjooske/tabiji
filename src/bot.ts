@@ -29,7 +29,7 @@ type NonImmediateAction = StableDiffusionInJapaneseAction;
 
 type ActionsInProgress = Map<string, NonImmediateAction>;
 
-const STABLE_DIFFUSION_PROMPT_MAX_LENGTH = 500;
+const STABLE_DIFFUSION_PROMPT_MAX_LENGTH = 200;
 
 function decideAction(
   actions: ActionsInProgress,
