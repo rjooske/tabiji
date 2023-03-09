@@ -21,6 +21,8 @@ const secretsSchema = z.object({
   REPLICATE_TOKEN: zNonEmptyString(),
   LINE_CHANNEL_SECRET: zNonEmptyString(),
   LINE_CHANNEL_ACCESS_TOKEN: zNonEmptyString(),
+  DEVELOPER_LINE_USER_ID: zNonEmptyString(),
+  BOT_KIND: z.literal("development").or(z.literal("production")),
 });
 
 type SslFilePaths = { certPath: string; keyPath: string };
@@ -81,7 +83,13 @@ function main() {
     })
   );
   const replicateClient = new ReplicateClient(secrets.REPLICATE_TOKEN);
-  const bot = new Bot(lineClient, translateClient, replicateClient);
+  const bot = new Bot(
+    secrets.BOT_KIND,
+    secrets.DEVELOPER_LINE_USER_ID,
+    lineClient,
+    translateClient,
+    replicateClient
+  );
 
   const app = express();
 
