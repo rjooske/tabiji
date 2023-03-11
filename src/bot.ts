@@ -52,29 +52,17 @@ function shouldRespond(
   }
 }
 
-function decideAction(
+export function decideAction(
   event: line.WebhookEvent,
-  actions: ActionsInProgress,
-  botKind: BotKind,
-  developerLineUserId: string
+  actions: ActionsInProgress
 ): Action | undefined {
   if (
     event.source.type !== "user" ||
     event.type !== "message" ||
-    event.message.type !== "text" ||
-    !shouldRespond(
-      botKind,
-      event.source.userId === developerLineUserId,
-      isDevMessage(event.message)
-    )
+    event.message.type !== "text"
   ) {
     return;
   }
-
-  // FIXME: parse, not validate
-  const text = isDevMessage(event.message)
-    ? event.message.text.slice(1)
-    : event.message.text;
 
   const action = actions.get(event.source.userId);
   if (action !== undefined) {
@@ -88,7 +76,7 @@ function decideAction(
       type: "stable-diffusion-in-japanese",
       initiatorLineUserId: event.source.userId,
       // FIXME: deny the request if the text is too long
-      messageText: text,
+      messageText: event.message.text,
     };
   }
 }
@@ -106,8 +94,6 @@ export class Bot {
   private readonly actionsInProgress: ActionsInProgress = new Map();
 
   constructor(
-    private readonly kind: BotKind,
-    private readonly developerLineUserId: string,
     private readonly lineClient: line.Client,
     private readonly translateClient: TranslateClient,
     private readonly replicateClient: ReplicateClient
@@ -150,12 +136,7 @@ export class Bot {
   }
 
   async handleWebhookEvent(event: line.WebhookEvent) {
-    const action = decideAction(
-      event,
-      this.actionsInProgress,
-      this.kind,
-      this.developerLineUserId
-    );
+    const action = decideAction(event, this.actionsInProgress);
     if (action === undefined) {
       return;
     }
