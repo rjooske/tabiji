@@ -93,7 +93,7 @@ function decideAction(
   }
 }
 
-function trimIfTooLong(s: string, maxLength: number) {
+export function trimIfTooLong(s: string, maxLength: number) {
   const len = stringz.length(s);
   if (len <= maxLength) {
     return s;
