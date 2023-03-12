@@ -5,7 +5,7 @@ import { TranslateClient } from "./translate.js";
 
 export type BotKind = "development" | "production";
 
-type StableDiffusionInJapaneseAction = {
+export type StableDiffusionInJapaneseAction = {
   type: "stable-diffusion-in-japanese";
   initiatorLineUserId: string;
   messageText: string;
@@ -17,7 +17,7 @@ type InProgressWarningAction = {
   actionInProgress: NonImmediateAction;
 };
 
-type Action = StableDiffusionInJapaneseAction | InProgressWarningAction;
+export type Action = StableDiffusionInJapaneseAction | InProgressWarningAction;
 type NonImmediateAction = StableDiffusionInJapaneseAction;
 
 type ActionsInProgress = Map<string, NonImmediateAction>;
@@ -64,6 +64,11 @@ export function decideAction(
     return;
   }
 
+  const text = event.message.text.trim();
+  if (text.length === 0) {
+    return;
+  }
+
   const action = actions.get(event.source.userId);
   if (action !== undefined) {
     return {
@@ -76,7 +81,7 @@ export function decideAction(
       type: "stable-diffusion-in-japanese",
       initiatorLineUserId: event.source.userId,
       // FIXME: deny the request if the text is too long
-      messageText: event.message.text,
+      messageText: text,
     };
   }
 }
