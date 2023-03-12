@@ -83,13 +83,7 @@ function main() {
     })
   );
   const replicateClient = new ReplicateClient(secrets.REPLICATE_TOKEN);
-  const bot = new Bot(
-    secrets.BOT_KIND,
-    secrets.DEVELOPER_LINE_USER_ID,
-    lineClient,
-    translateClient,
-    replicateClient
-  );
+  const bot = new Bot(lineClient, translateClient, replicateClient);
 
   const app = express();
 
