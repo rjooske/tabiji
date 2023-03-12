@@ -181,6 +181,7 @@ describe("decide actions", () => {
   });
 
   // TODO: test cases where user sends a request while previous one is in progress
+  // TODO: test cases where the message text is too long
 });
 
 describe("string trimming", () => {

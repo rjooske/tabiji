@@ -3,12 +3,16 @@ import stringz from "stringz";
 import { ReplicateClient } from "./replicate.js";
 import { TranslateClient } from "./translate.js";
 
-export type BotKind = "development" | "production";
-
 export type StableDiffusionInJapaneseAction = {
   type: "stable-diffusion-in-japanese";
   initiatorLineUserId: string;
   messageText: string;
+};
+
+type TextTooLongWarningAction = {
+  type: "text-too-long-warning";
+  replyToken: string;
+  maxLength: number;
 };
 
 type InProgressWarningAction = {
@@ -17,40 +21,15 @@ type InProgressWarningAction = {
   actionInProgress: NonImmediateAction;
 };
 
-export type Action = StableDiffusionInJapaneseAction | InProgressWarningAction;
+type Action =
+  | StableDiffusionInJapaneseAction
+  | TextTooLongWarningAction
+  | InProgressWarningAction;
 type NonImmediateAction = StableDiffusionInJapaneseAction;
 
 type ActionsInProgress = Map<string, NonImmediateAction>;
 
-function isDevMessage(msg: line.TextMessage) {
-  return msg.text.startsWith("!");
-}
-
-/**
- * ┌──────┬────────┬──────────┬──────────┐
- * │ bot  │  user  │ dev msg? │ respond? │
- * ├──────┼────────┼──────────┼──────────┤
- * │ dev  │ dev    │ no       │ no       │
- * │ dev  │ dev    │ yes      │ yes      │
- * │ dev  │ normal │ *        │ no       │
- * │ prod │ dev    │ no       │ yes      │
- * │ prod │ dev    │ yes      │ no       │
- * │ prod │ normal │ *        │ yes      │
- * └──────┴────────┴──────────┴──────────┘
- */
-function shouldRespond(
-  kind: BotKind,
-  isUserDev: boolean,
-  isDevMessage: boolean
-): boolean {
-  const devBotShouldRespond = isUserDev && isDevMessage;
-  switch (kind) {
-    case "development":
-      return devBotShouldRespond;
-    case "production":
-      return !devBotShouldRespond;
-  }
-}
+const STABLE_DIFFUSION_PROMPT_MAX_LENGTH = 200;
 
 function decideAction(
   event: line.WebhookEvent,
@@ -76,14 +55,19 @@ function decideAction(
       replyToken: event.replyToken,
       actionInProgress: action,
     };
-  } else {
+  }
+  if (stringz.length(text) > STABLE_DIFFUSION_PROMPT_MAX_LENGTH) {
     return {
-      type: "stable-diffusion-in-japanese",
-      initiatorLineUserId: event.source.userId,
-      // FIXME: deny the request if the text is too long
-      messageText: text,
+      type: "text-too-long-warning",
+      replyToken: event.replyToken,
+      maxLength: STABLE_DIFFUSION_PROMPT_MAX_LENGTH,
     };
   }
+  return {
+    type: "stable-diffusion-in-japanese",
+    initiatorLineUserId: event.source.userId,
+    messageText: text,
+  };
 }
 
 function trimIfTooLong(s: string, maxLength: number) {
@@ -132,6 +116,15 @@ export class Bot {
     this.actionsInProgress.delete(action.initiatorLineUserId);
   }
 
+  private async handleTextTooLongWarningAction(
+    action: TextTooLongWarningAction
+  ) {
+    await this.lineClient.replyMessage(action.replyToken, {
+      type: "text",
+      text: `⚠️ 文章が長すぎます！最大${action.maxLength}文字までです`,
+    });
+  }
+
   private async handleInProgressWarningAction(action: InProgressWarningAction) {
     const prompt = trimIfTooLong(action.actionInProgress.messageText, 30);
     await this.lineClient.replyMessage(action.replyToken, {
@@ -150,6 +143,8 @@ export class Bot {
         return await this.handleStableDiffusionInJapaneseAction(action);
       case "in-progress-warning":
         return await this.handleInProgressWarningAction(action);
+      case "text-too-long-warning":
+        return await this.handleTextTooLongWarningAction(action);
     }
   }
 }
