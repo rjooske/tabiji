@@ -1,7 +1,7 @@
+import { Translate } from "@google-cloud/translate/build/src/v2/index.js";
 import line from "@line/bot-sdk";
 import stringz from "stringz";
 import { ReplicateClient } from "./replicate.js";
-import { TranslateClient } from "./translate.js";
 
 export type StableDiffusionInJapaneseAction = {
   type: "stable-diffusion-in-japanese";
@@ -79,12 +79,15 @@ function trimIfTooLong(s: string, maxLength: number) {
   }
 }
 
+const LANGUAGE_CODE_JAPANESE = "ja";
+const LANGUAGE_CODE_ENGLISH = "en";
+
 export class Bot {
   private readonly actionsInProgress: ActionsInProgress = new Map();
 
   constructor(
     private readonly lineClient: line.Client,
-    private readonly translateClient: TranslateClient,
+    private readonly translateClient: Translate,
     private readonly replicateClient: ReplicateClient
   ) {}
 
@@ -96,11 +99,10 @@ export class Bot {
       type: "text",
       text: "🎨 生成中…",
     });
-    const en = await this.translateClient.translate(
-      action.messageText,
-      "ja",
-      "en"
-    );
+    const [en] = await this.translateClient.translate(action.messageText, {
+      from: LANGUAGE_CODE_JAPANESE,
+      to: LANGUAGE_CODE_ENGLISH,
+    });
     console.log(`${action.messageText} → ${en}`); // TODO
     const urls = await this.replicateClient.callStableDiffusion(en);
     await this.lineClient.pushMessage(action.initiatorLineUserId, [

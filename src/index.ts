@@ -9,7 +9,6 @@ import https from "node:https";
 import { z } from "zod";
 import { Bot } from "./bot.js";
 import { ReplicateClient } from "./replicate.js";
-import { TranslateClient } from "./translate.js";
 
 const stderr = new Console(process.stderr);
 
@@ -73,15 +72,13 @@ function main() {
     channelSecret: secrets.LINE_CHANNEL_SECRET,
     channelAccessToken: secrets.LINE_CHANNEL_ACCESS_TOKEN,
   });
-  const translateClient = new TranslateClient(
-    new Translate({
-      // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
-      credentials: {
-        client_email: secrets.GOOGLE_CLOUD_CLIENT_EMAIL,
-        private_key: secrets.GOOGLE_CLOUD_PRIVATE_KEY,
-      },
-    })
-  );
+  const translateClient = new Translate({
+    // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
+    credentials: {
+      client_email: secrets.GOOGLE_CLOUD_CLIENT_EMAIL,
+      private_key: secrets.GOOGLE_CLOUD_PRIVATE_KEY,
+    },
+  });
   const replicateClient = new ReplicateClient(secrets.REPLICATE_TOKEN);
   const bot = new Bot(lineClient, translateClient, replicateClient);
 
