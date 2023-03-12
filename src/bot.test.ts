@@ -1,9 +1,7 @@
 import line from "@line/bot-sdk";
-import {
-  decideAction,
-  StableDiffusionInJapaneseAction,
-  trimIfTooLong,
-} from "./bot.js";
+import { exportedForTesting, StableDiffusionInJapaneseAction } from "./bot.js";
+
+const { decideAction, trimIfTooLong } = exportedForTesting;
 
 describe("decide actions", () => {
   it("no actions for non message events", () => {

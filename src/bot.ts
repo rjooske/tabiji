@@ -52,7 +52,7 @@ function shouldRespond(
   }
 }
 
-export function decideAction(
+function decideAction(
   event: line.WebhookEvent,
   actions: ActionsInProgress
 ): Action | undefined {
@@ -86,7 +86,7 @@ export function decideAction(
   }
 }
 
-export function trimIfTooLong(s: string, maxLength: number) {
+function trimIfTooLong(s: string, maxLength: number) {
   const len = stringz.length(s);
   if (len <= maxLength) {
     return s;
@@ -153,3 +153,5 @@ export class Bot {
     }
   }
 }
+
+export const exportedForTesting = { decideAction, trimIfTooLong };
