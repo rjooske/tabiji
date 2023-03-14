@@ -72,60 +72,38 @@ describe("decide actions", () => {
   });
 
   it("no actions for non text message events", () => {
-    const base: Omit<line.MessageEvent, "message"> = {
-      type: "message",
-      replyToken: "",
-      source: { type: "user", userId: "" },
-      mode: "active",
-      timestamp: 0,
-    };
-    const tests: line.MessageEvent[] = [
+    const tests: line.EventMessage[] = [
+      { type: "image", id: "", contentProvider: { type: "line" } },
+      { type: "video", id: "", contentProvider: { type: "line" } },
+      { type: "audio", id: "", duration: 0, contentProvider: { type: "line" } },
       {
-        ...base,
-        message: { type: "image", id: "", contentProvider: { type: "line" } },
+        type: "location",
+        id: "",
+        title: "",
+        address: "",
+        latitude: 0,
+        longitude: 0,
       },
+      { type: "file", id: "", fileName: "", fileSize: "" },
       {
-        ...base,
-        message: { type: "video", id: "", contentProvider: { type: "line" } },
-      },
-      {
-        ...base,
-        message: {
-          type: "audio",
-          id: "",
-          duration: 0,
-          contentProvider: { type: "line" },
-        },
-      },
-      {
-        ...base,
-        message: {
-          type: "location",
-          id: "",
-          title: "",
-          address: "",
-          latitude: 0,
-          longitude: 0,
-        },
-      },
-      {
-        ...base,
-        message: { type: "file", id: "", fileName: "", fileSize: "" },
-      },
-      {
-        ...base,
-        message: {
-          type: "sticker",
-          id: "",
-          keywords: [],
-          packageId: "",
-          stickerId: "",
-          stickerResourceType: "MESSAGE",
-        },
+        type: "sticker",
+        id: "",
+        keywords: [],
+        packageId: "",
+        stickerId: "",
+        stickerResourceType: "MESSAGE",
       },
     ];
     for (const test of tests) {
-      expect(decideAction(test, new Map())).toBeUndefined();
+      const event: line.MessageEvent = {
+        type: "message",
+        replyToken: "",
+        message: test,
+        source: { type: "user", userId: "" },
+        mode: "active",
+        timestamp: 0,
+      };
+      expect(decideAction(event, new Map())).toBeUndefined();
     }
   });
 
