@@ -284,7 +284,7 @@ export class Bot {
       to: LANGUAGE_CODE_ENGLISH,
     });
     console.log(`${action.prompt} → ${en}`); // TODO
-    const urls = await this.replicateClient.callStableDiffusion(en);
+    const urls = await this.replicateClient.callAnythingV4(en);
     await this.lineClient.pushMessage(action.initiatorLineUserId, [
       { type: "text", text: "🖼️ 完成！" },
       ...urls.map(
