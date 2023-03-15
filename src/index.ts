@@ -21,7 +21,6 @@ const secretsSchema = z.object({
   LINE_CHANNEL_SECRET: zNonEmptyString(),
   LINE_CHANNEL_ACCESS_TOKEN: zNonEmptyString(),
   DEVELOPER_LINE_USER_ID: zNonEmptyString(),
-  BOT_KIND: z.literal("development").or(z.literal("production")),
 });
 
 type SslFilePaths = { certPath: string; keyPath: string };
